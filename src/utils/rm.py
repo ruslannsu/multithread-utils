@@ -4,60 +4,54 @@ from concurrent.futures import ThreadPoolExecutor
 from utils.base_util import BaseUtil
 
 class RMutil(BaseUtil):
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, proc_count=4) -> None:
         super().__init__(path)
-        self._thread_pool = ThreadPoolExecutor(max_workers=700)
-        
-    def _remove_default(self, path):  
-        dirs = next(os.walk(path))[1]
-        files = next(os.walk(path))[2]
-
-        for file in files:
-            file_path = os.path.join(path, file)
-            os.remove(file_path)
-
-        if len(dirs) == 0:
-            return
-
-        for dir in dirs:
-            dir_path = os.path.join(path, dir)
-            self._remove_default(dir_path)
-            os.rmdir(dir_path)
+        self._processes = proc_count
     
+    def _remove_wrapper(self, path: str) -> None:
+        self._remove_rec(path)
+        os.rmdir(path)
 
-    #threading is useless for remove
-    def _remove_with_threads(self, path):
+    def _remove_rec(self, path: str) -> None:  
+        root = next(os.walk(path))[0]
         dirs = next(os.walk(path))[1]
         files = next(os.walk(path))[2]
-
-        if len(dirs) == 0:
-            for file in files:
-                file_path = os.path.join(path, file)
-                os.remove(file_path)
-            return
-        
-        futures = []
-        for dir in dirs:
-            dir_path = os.path.join(path, dir)
-            futures.append((self._thread_pool.submit(self._remove_with_threads, dir_path), dir_path))
 
         for file in files:
             file_path = os.path.join(path, file)
             os.remove(file_path)
 
-        for future in futures:
-            res, arg = future
-            res.result()
-            os.rmdir(arg)
+        if len(dirs) == 0:
+            return
 
-    def _remove_with_multiprocessing(self, path):
-        pass
-           
+        for dir in dirs:
+            dir_path = os.path.join(path, dir)
+            self._remove_rec(dir_path)
+            os.rmdir(dir_path)
+        
+        
+    def _remove_batch(self, paths: list) -> None:
+        for path in  paths:
+            self._remove_wrapper(path=path)
+
+    def _remove(self):
+        dirs = next(os.walk(self._path))[1]
+        
+        task_args = []
+        step = len(dirs) // self._processes
+        for i in range(self._processes):
+            left = i * step
+            right = (i + 1) * step
+
+            if right >= len(dirs):
+                right = len(dirs)
+                
+            task_paths = dirs[left:right]
+            task_paths = [os.path.join(self._path, task_path) for task_path in task_paths]
+            task_args.append(task_paths)
+
+        with mp.Pool(processes=self._processes) as process_pool:
+            process_pool.map(self._remove_batch, task_args)
         
     def run(self):
-        
-        
-               
-        
-        
-        
+        self._remove()
