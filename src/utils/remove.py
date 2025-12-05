@@ -1,9 +1,8 @@
 import os
 import multiprocessing as mp
-from concurrent.futures import ThreadPoolExecutor
 from utils.base_util import BaseUtil
 
-class RMutil(BaseUtil):
+class RemoveUtil(BaseUtil):
     def __init__(self, path: str, proc_count=4) -> None:
         super().__init__(path)
         self._processes = proc_count

@@ -1,5 +1,5 @@
-from utils.rm import RMutil
+from src.utils.remove import RemoveUtil
 
-rm = RMutil('../wide_tree')
+rm = RemoveUtil('../wide_tree')
 
 rm.run()

@@ -7,4 +7,3 @@ class BaseUtil:
 
     def run(self):
         pass
-
