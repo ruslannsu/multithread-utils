@@ -13,9 +13,7 @@ class RMutil(BaseUtil):
         os.rmdir(path)
 
     def _remove_rec(self, path: str) -> None:  
-        root = next(os.walk(path))[0]
-        dirs = next(os.walk(path))[1]
-        files = next(os.walk(path))[2]
+        _root, dirs, files = next(os.walk(path))
 
         for file in files:
             file_path = os.path.join(path, file)
